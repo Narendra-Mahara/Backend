@@ -51,20 +51,17 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new apiError(400, "Avatar file is required");
   }
 
-  const avatar = await uploadOnCloudinary(avatarLocalPath); // wrong
-  console.log("Avatar:", avatar);
+  const avatar = await uploadOnCloudinary(avatarLocalPath); //uploading avatar image
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath); //uploading cover image
 
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  console.log("CoverImage:", coverImage);
-
-  // if (!avatar) {
-  //   throw new apiError(400, "Avatar file is required !!!");
-  // }
+  if (!avatar) {
+    throw new apiError(400, "Avatar file is required !!!");
+  }
 
   //Create user object on mongodb
   const user = await User.create({
     fullName,
-    avatar: avatar?.url || "",
+    avatar: avatar?.url,
     coverImage: coverImage?.url || "",
     username: username.toLowerCase(),
     email,
