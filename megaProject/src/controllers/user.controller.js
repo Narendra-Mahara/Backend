@@ -4,6 +4,25 @@ import { User } from "../models/user.models.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshToken = async (userId) => {
+  //wrong
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+    return { refreshToken, accessToken };
+  } catch (error) {
+    // console.log("error aayo", error);
+    throw new apiError(
+      500,
+      "Something went wrong while generating refresh and access token",
+      error
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   //get user data from frontend
   //check for data if null (validation)
@@ -81,4 +100,62 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new apiResponse(200, createdUser, "User register successfully!"));
 });
-export { registerUser };
+
+const loginUser = asyncHandler(async (req, res) => {
+  // req.body => data
+  // find user from database
+  // authorize password
+  // generate accessToken and refreshToken
+  // send cookie
+
+  const { username, email, password } = req.body;
+
+  console.log(email);
+
+  if (!username && !email) {
+    throw new apiError(400, "Username or email required");
+  }
+
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  const passwordValidation = await user.isPasswordCorrect(password);
+
+  if (!passwordValidation) {
+    throw new apiError(401, "Wrong password");
+  }
+
+  const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  console.log("accessToken", accessToken);
+  console.log("refreshToken", refreshToken);
+  
+  const loggedInUser = await User.findOne(user._id).select(
+    "-password -refreshToken"
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new apiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in successfully!!!"
+      )
+    );
+});
+export { registerUser, loginUser };
