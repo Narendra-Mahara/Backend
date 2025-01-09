@@ -1,9 +1,16 @@
 import { Router } from "express";
-import { loginUser, registerUser } from "../controllers/user.controller.js";
+import {
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+
 const router = Router();
 router.route("/register").post(
-  upload.fields([   // file handling using multer
+  upload.fields([
+    // file handling using multer
     {
       name: "avatar",
       maxCount: 1,
@@ -16,6 +23,6 @@ router.route("/register").post(
   registerUser
 );
 router.route("/login").post(loginUser);
-
+router.route("/logout").post(verifyJWT, logoutUser);
 
 export default router;

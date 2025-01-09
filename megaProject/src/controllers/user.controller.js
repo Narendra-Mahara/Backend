@@ -110,7 +110,6 @@ const loginUser = asyncHandler(async (req, res) => {
 
   const { username, email, password } = req.body;
 
-  console.log(email);
 
   if (!username && !email) {
     throw new apiError(400, "Username or email required");
@@ -130,9 +129,6 @@ const loginUser = asyncHandler(async (req, res) => {
     user._id
   );
 
-  console.log("accessToken", accessToken);
-  console.log("refreshToken", refreshToken);
-  
   const loggedInUser = await User.findOne(user._id).select(
     "-password -refreshToken"
   );
@@ -158,4 +154,30 @@ const loginUser = asyncHandler(async (req, res) => {
       )
     );
 });
-export { registerUser, loginUser };
+
+const logoutUser = asyncHandler(async (req, res) => {
+  //clear cookies
+  //reset access and refresh token
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new apiResponse(200, {}, "User logged out"));
+});
+export { registerUser, loginUser, logoutUser };
