@@ -396,7 +396,7 @@ const getUserHistory = asyncHandler(async (req, res) => {
   const user = User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types._objectId(req.user._id),
+        _id: new mongoose.Types.ObjectId(req.user._id),
       },
     },
     {
